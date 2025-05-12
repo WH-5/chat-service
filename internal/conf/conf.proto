@@ -38,4 +38,6 @@ message Data {
   }
   Database database = 1;
   Redis redis = 2;
+  string name=3;
+  string version=4;
 }

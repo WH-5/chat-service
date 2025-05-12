@@ -1,51 +1,38 @@
-# Kratos Project Template
+端到端加密
 
-## Install Kratos
-```
-go install github.com/go-kratos/kratos/cmd/kratos/v2@latest
-```
-## Create a service
-```
-# Create a template project
-kratos new server
 
-cd server
-# Add a proto template
-kratos proto add api/server/server.proto
-# Generate the proto code
-kratos proto client api/server/server.proto
-# Generate the source code of service by proto file
-kratos proto server api/server/server.proto -t internal/service
+⸻
 
-go generate ./...
-go build -o ./bin/ ./...
-./bin/server -conf ./configs
-```
-## Generate other auxiliary files by Makefile
-```
-# Download and update dependencies
-make init
-# Generate API files (include: pb.go, http, grpc, validate, swagger) by proto file
-make api
-# Generate all files
-make all
-```
-## Automated Initialization (wire)
-```
-# install wire
-go get github.com/google/wire/cmd/wire
+✅ 用户注册流程（第一次）
 
-# generate wire
-cd cmd/server
-wire
-```
+客户端做的事情：
+1.	用户输入密码，比如 123456
+2.	生成一对【加密用的密钥对】：私钥 + 公钥
+3.	生成一个随机的 盐 salt（比如 16 字节随机数）
+4.	用 密码 + 盐，通过 KDF（比如 argon2id），派生一个对称密钥
+5.	用这个对称密钥（比如用 AES-GCM）加密你的私钥
+6.	上传到服务器的信息：
+•	公钥
+•	加密后的私钥
+•	盐
+•	（密码本身也要传一次用于注册）
 
-## Docker
-```bash
-# build
-docker build -t <your-docker-image-name> .
+服务端做的事情：
+1.	接收密码
+2.	用 KDF（或 bcrypt）把密码处理成哈希值，然后只存哈希，不存原文密码
+3.	把公钥、加密私钥、盐、密码哈希存到数据库
 
-# run
-docker run --rm -p 8000:8000 -p 9000:9000 -v </path/to/your/configs>:/data/conf <your-docker-image-name>
-```
+⸻
 
+✅ 用户登录流程（换设备、重新登录）
+
+客户端做的事情：
+1.	用户输入密码，比如 123456
+2.	把密码发到服务器，验证登录（服务器拿存的哈希比对）
+3.	登录成功后，服务器返回：
+•	盐
+•	加密的私钥
+•	公钥
+4.	客户端拿到盐，重新用输入的密码 + 盐 → 派生出密钥
+5.	用派生出来的密钥，解密加密的私钥
+6.	解密成功，就能拿到用户真正的私钥，开始正常聊天/解密消息

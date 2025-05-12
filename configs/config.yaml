@@ -5,6 +5,8 @@ server:
   grpc:
     addr: 0.0.0.0:9000
     timeout: 1s
+  name: "chat-service"
+  version: "1.0"
 data:
   database:
     driver: mysql
